@@ -9,7 +9,6 @@ export class VerificationLink {
 
   async generateVerificationLink(email: string) {
     // generate verification link and store in database
-    console.log(`Generating verification link for ${email}`);
     this.token = genToken();
     await this.storeVerificationToken(email);
     return `http://localhost:3001/verify?email=${email}&token=${this.token}`;
@@ -17,7 +16,6 @@ export class VerificationLink {
 
   async storeVerificationToken(email: string) {
     // function to store verification token in database
-    console.log(`Storing verification link`)
     const user = await this.prisma.user.update({
       where: {
         email: email.toLowerCase(),

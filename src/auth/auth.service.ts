@@ -1,7 +1,5 @@
 import * as bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
-import * as geoip from 'geoip-lite';
-import { Lookup } from 'geoip-lite';
 import { randomBytes } from 'node:crypto';
 import { LoginDto } from './dto/login-dto';
 import { Request, Response } from 'express';
@@ -19,6 +17,7 @@ type ValidateUserSuccess = {
   data: {
     isValid: boolean;
     id: string;
+    role: string[]
   };
 };
 
@@ -84,7 +83,7 @@ export class AuthService {
     try {
       const result = await this.validateUser(email, password);
       if (!result.success) return result.error;
-      const { isValid, id } = result.data;
+      const { isValid, id, role } = result.data;
       if (isValid) {
         if (rememberMe) {
           // Handle "Remember Me" functionality
@@ -103,7 +102,7 @@ export class AuthService {
 
         const sessionId = await this.storeSession(id);
         const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-        const token = await this.encrypt({ id, expiresAt, sessionId });
+        const token = await this.encrypt({ id, expiresAt, sessionId, role });
         response.cookie('sessionToken', token, {
           maxAge: 2 * 24 * 60 * 60 * 1000, // 30 days
           httpOnly: true,
@@ -140,9 +139,9 @@ export class AuthService {
         success: false,
         error: { message: 'User not found', status: 400 },
       };
-    const { password: hashedPassword, id } = userInfo;
+    const { password: hashedPassword, id, role } = userInfo;
     const isValid = await bcrypt.compare(password, hashedPassword);
-    return { success: true, data: { isValid, id } };
+    return { success: true, data: { isValid, id, role } };
   }
 
   /**
@@ -200,7 +199,7 @@ export class AuthService {
    */
   async signUp(signUpDto: SignUpDto, ipAddress: string, request: Request) {
     const { email, password } = signUpDto;
-
+    ipAddress = '146.70.99.201'
     //check if user Exists
     try {
       const response = await fetchLocation(ipAddress);
